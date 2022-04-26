@@ -1,5 +1,5 @@
 use crate::gift128::key_schedule::precompute_round_keys;
-use crate::gift128::packing::{pack, unpack};
+use crate::gift128::packing::{bitsliced_pack, bitsliced_unpack, pack, unpack};
 use crate::gift128::rounds::{inv_rounds, rounds};
 
 mod key_schedule;
@@ -12,7 +12,7 @@ const BLOCK_SIZE: usize = 16;
 
 type State = (u32, u32, u32, u32);
 type Block = [u8; BLOCK_SIZE];
-type Key = [u8; KEY_SIZE];
+pub type Key = [u8; KEY_SIZE];
 
 pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
     if plaintext.len() % BLOCK_SIZE != 0 {
@@ -52,6 +52,47 @@ pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
         let state = inv_rounds(pack(ciphertext_block), &round_keys);
 
         plaintext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&unpack(state));
+    }
+}
+
+pub fn bitsliced_encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
+    if plaintext.len() % BLOCK_SIZE != 0 {
+        panic!("plaintext size is not a multiple of 16");
+    }
+
+    if plaintext.len() != ciphertext.len() {
+        panic!("ciphertext size differs from plaintext size");
+    }
+
+    let round_keys = precompute_round_keys(key);
+    for (i, chunk) in plaintext.chunks(BLOCK_SIZE).enumerate() {
+        // TODO: annoying runtime check
+        let ciphertext_block = chunk.try_into().expect("invalid chunk length");
+
+        let state = rounds(bitsliced_pack(&ciphertext_block), &round_keys);
+
+        ciphertext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&bitsliced_unpack(state));
+    }
+}
+
+pub fn bitsliced_decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
+    if ciphertext.len() % 16 != 0 {
+        panic!("ciphertext size is not a multiple of 16");
+    }
+
+    if ciphertext.len() != plaintext.len() {
+        panic!("plaintext size differs from ciphertext size");
+    }
+
+    let round_keys = precompute_round_keys(key);
+
+    for (i, chunk) in ciphertext.chunks(BLOCK_SIZE).enumerate() {
+        // TODO: annoying runtime check
+        let ciphertext_block = chunk.try_into().expect("invalid chunk length");
+
+        let state = inv_rounds(bitsliced_pack(ciphertext_block), &round_keys);
+
+        plaintext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&bitsliced_unpack(state));
     }
 }
 
@@ -125,6 +166,19 @@ mod tests {
             let mut plaintext = [0; BLOCK_SIZE];
             decrypt(&case.ciphertext, &case.key, &mut plaintext);
             assert_eq!(plaintext, case.plaintext);
+        }
+    }
+
+    #[test]
+    fn test_bitsliced_encrypt_decrypt() {
+        for case in &CASES {
+            let mut ciphertext = [0; BLOCK_SIZE];
+            bitsliced_encrypt(&case.plaintext, &case.key, &mut ciphertext);
+
+            let mut plaintext = [0; BLOCK_SIZE];
+            bitsliced_decrypt(&ciphertext, &case.key, &mut plaintext);
+
+            assert_eq!(case.plaintext, plaintext);
         }
     }
 }

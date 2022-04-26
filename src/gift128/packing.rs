@@ -1,5 +1,5 @@
 use crate::{swap_move, swap_move_single};
-use crate::gift128::{Block, State};
+use crate::gift128::{Block, BLOCK_SIZE, State};
 
 #[must_use]
 pub fn pack(input: &Block) -> State {
@@ -77,6 +77,25 @@ pub fn unpack(state: State) -> Block {
         ((s0 >> 8) & 0xff) as u8,
         (s0 & 0xff) as u8,
     ]
+}
+
+pub fn bitsliced_pack(input: &Block) -> State {
+    let s0 = u32::from_le_bytes([input[0], input[1], input[2], input[3]]).swap_bytes();
+    let s1 = u32::from_le_bytes([input[4], input[5], input[6], input[7]]).swap_bytes();
+    let s2 = u32::from_le_bytes([input[8], input[9], input[10], input[11]]).swap_bytes();
+    let s3 = u32::from_le_bytes([input[12], input[13], input[14], input[15]]).swap_bytes();
+
+    (s0, s1, s2, s3)
+}
+
+pub fn bitsliced_unpack(state: State) -> Block {
+    let (s0, s1, s2, s3) = state;
+    let mut block = [0; BLOCK_SIZE];
+    block[..4].copy_from_slice(&s0.to_be_bytes());
+    block[4..8].copy_from_slice(&s1.to_be_bytes());
+    block[8..12].copy_from_slice(&s2.to_be_bytes());
+    block[12..16].copy_from_slice(&s3.to_be_bytes());
+    block
 }
 
 #[cfg(test)]
