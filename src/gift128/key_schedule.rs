@@ -1,8 +1,9 @@
-use crate::gift128::{Key, ROUNDS};
+use crate::gift128::Key;
+use crate::gift128::rounds::ROUNDS;
 use crate::swapmove::swap_move_single;
 
 // TODO: use tuples
-type RoundKeys = [u32; ROUNDS * 2];
+pub type RoundKeys = [u32; ROUNDS * 2];
 
 #[must_use]
 fn key_update(round_key: u32) -> u32 {

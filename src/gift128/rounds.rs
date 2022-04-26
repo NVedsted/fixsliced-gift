@@ -1,9 +1,10 @@
-use crate::gift128::sbox::{inv_sbox, sbox};
 use crate::gift128::State;
+use crate::gift128::key_schedule::RoundKeys;
+use crate::gift128::sbox::{inv_sbox, sbox};
 use crate::swap_move_single;
 
-// TODO: make private again
-pub const ROUND_CONSTANTS: [u32; 40] = [
+pub const ROUNDS: usize = 40;
+const ROUND_CONSTANTS: [u32; ROUNDS] = [
     0x10000008, 0x80018000, 0x54000002, 0x01010181,
     0x8000001f, 0x10888880, 0x6001e000, 0x51500002,
     0x03030180, 0x8000002f, 0x10088880, 0x60016000,
@@ -111,7 +112,7 @@ pub fn quintuple_round(state: State, round_keys: &[u32], round_constants: &[u32]
 
 // TODO: possible to fix size on slices?
 #[must_use]
-pub fn inv_quintuple_round(state: State, round_keys: &[u32], round_constants: &[u32]) -> State {
+fn inv_quintuple_round(state: State, round_keys: &[u32], round_constants: &[u32]) -> State {
     let (mut s0, mut s1, mut s2, mut s3) = state;
     s0 ^= s3;
     s3 ^= s0;
@@ -155,4 +156,28 @@ pub fn inv_quintuple_round(state: State, round_keys: &[u32], round_constants: &[
     (s3, s1, s2, s0) = inv_sbox((s3, s1, s2, s0));
 
     (s0, s1, s2, s3)
+}
+
+pub fn rounds(mut state: State, round_keys: &RoundKeys) -> State {
+    for i in (0..ROUNDS).step_by(5) {
+        state = quintuple_round(
+            state,
+            &round_keys[i * 2..i * 2 + 10],
+            &ROUND_CONSTANTS[i..i + 5],
+        );
+    }
+
+    state
+}
+
+pub fn inv_rounds(mut state: State, round_keys: &RoundKeys) -> State {
+    for i in (0..ROUNDS).step_by(5).rev() {
+        state = inv_quintuple_round(
+            state,
+            &round_keys[i * 2..i * 2 + 10],
+            &ROUND_CONSTANTS[i..i + 5],
+        );
+    }
+
+    state
 }

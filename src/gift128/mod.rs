@@ -1,6 +1,6 @@
 use crate::gift128::key_schedule::precompute_round_keys;
 use crate::gift128::packing::{pack, unpack};
-use crate::gift128::rounds::{inv_quintuple_round, quintuple_round, ROUND_CONSTANTS};
+use crate::gift128::rounds::{inv_rounds, rounds};
 
 mod key_schedule;
 mod packing;
@@ -9,7 +9,6 @@ mod sbox;
 
 const KEY_SIZE: usize = 16;
 const BLOCK_SIZE: usize = 16;
-const ROUNDS: usize = 40;
 
 type State = (u32, u32, u32, u32);
 type Block = [u8; BLOCK_SIZE];
@@ -17,7 +16,6 @@ type Key = [u8; KEY_SIZE];
 
 pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
     if plaintext.len() % BLOCK_SIZE != 0 {
-        // TODO: is this leakage?
         panic!("plaintext size is not a multiple of 16");
     }
 
@@ -29,16 +27,8 @@ pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
     for (i, chunk) in plaintext.chunks(BLOCK_SIZE).enumerate() {
         // TODO: annoying runtime check
         let plaintext_block = chunk.try_into().expect("invalid chunk length");
-        let mut state = pack(plaintext_block);
 
-        for i in (0..ROUNDS).step_by(5) {
-            // TODO: perhaps move responsibility of `ROUND_CONSTANTS` into `quintuple_round`
-            state = quintuple_round(
-                state,
-                &round_keys[i * 2..i * 2 + 10],
-                &ROUND_CONSTANTS[i..i + 5],
-            );
-        }
+        let state = rounds(pack(plaintext_block), &round_keys);
 
         ciphertext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&unpack(state));
     }
@@ -46,7 +36,6 @@ pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
 
 pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
     if ciphertext.len() % 16 != 0 {
-        // TODO: is this leakage?
         panic!("ciphertext size is not a multiple of 16");
     }
 
@@ -59,16 +48,8 @@ pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
     for (i, chunk) in ciphertext.chunks(BLOCK_SIZE).enumerate() {
         // TODO: annoying runtime check
         let ciphertext_block = chunk.try_into().expect("invalid chunk length");
-        let mut state = pack(ciphertext_block);
 
-        for i in (0..ROUNDS).step_by(5).rev() {
-            // TODO: perhaps move responsibility of `ROUND_CONSTANTS` into `quintuple_round`
-            state = inv_quintuple_round(
-                state,
-                &round_keys[i * 2..i * 2 + 10],
-                &ROUND_CONSTANTS[i..i + 5],
-            );
-        }
+        let state = inv_rounds(pack(ciphertext_block), &round_keys);
 
         plaintext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&unpack(state));
     }
