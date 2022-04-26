@@ -79,6 +79,7 @@ pub fn unpack(state: State) -> Block {
     ]
 }
 
+#[must_use]
 pub fn bitsliced_pack(input: &Block) -> State {
     let s0 = u32::from_le_bytes([input[0], input[1], input[2], input[3]]).swap_bytes();
     let s1 = u32::from_le_bytes([input[4], input[5], input[6], input[7]]).swap_bytes();
@@ -88,6 +89,7 @@ pub fn bitsliced_pack(input: &Block) -> State {
     (s0, s1, s2, s3)
 }
 
+#[must_use]
 pub fn bitsliced_unpack(state: State) -> Block {
     let (s0, s1, s2, s3) = state;
     let mut block = [0; BLOCK_SIZE];

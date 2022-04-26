@@ -1,4 +1,4 @@
-use crate::gift128::key_schedule::precompute_round_keys;
+use crate::gift128::key_schedule::{precompute_round_keys, RoundKeys};
 use crate::gift128::packing::{bitsliced_pack, bitsliced_unpack, pack, unpack};
 use crate::gift128::rounds::{inv_rounds, rounds};
 
@@ -55,45 +55,18 @@ pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
     }
 }
 
-pub fn bitsliced_encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
-    if plaintext.len() % BLOCK_SIZE != 0 {
-        panic!("plaintext size is not a multiple of 16");
-    }
-
-    if plaintext.len() != ciphertext.len() {
-        panic!("ciphertext size differs from plaintext size");
-    }
-
-    let round_keys = precompute_round_keys(key);
-    for (i, chunk) in plaintext.chunks(BLOCK_SIZE).enumerate() {
-        // TODO: annoying runtime check
-        let ciphertext_block = chunk.try_into().expect("invalid chunk length");
-
-        let state = rounds(bitsliced_pack(&ciphertext_block), &round_keys);
-
-        ciphertext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&bitsliced_unpack(state));
-    }
+#[must_use]
+pub fn bitsliced_encrypt_block(plaintext: &Block, round_keys: &RoundKeys) -> Block {
+    let initial_state = bitsliced_pack(&plaintext);
+    let final_state = rounds(initial_state, &round_keys);
+    bitsliced_unpack(final_state)
 }
 
-pub fn bitsliced_decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
-    if ciphertext.len() % 16 != 0 {
-        panic!("ciphertext size is not a multiple of 16");
-    }
-
-    if ciphertext.len() != plaintext.len() {
-        panic!("plaintext size differs from ciphertext size");
-    }
-
-    let round_keys = precompute_round_keys(key);
-
-    for (i, chunk) in ciphertext.chunks(BLOCK_SIZE).enumerate() {
-        // TODO: annoying runtime check
-        let ciphertext_block = chunk.try_into().expect("invalid chunk length");
-
-        let state = inv_rounds(bitsliced_pack(ciphertext_block), &round_keys);
-
-        plaintext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&bitsliced_unpack(state));
-    }
+#[must_use]
+pub fn bitsliced_decrypt_block(ciphertext: &Block, round_keys: &RoundKeys) -> Block {
+    let initial_state = bitsliced_pack(&ciphertext);
+    let final_state = inv_rounds(initial_state, &round_keys);
+    bitsliced_unpack(final_state)
 }
 
 #[cfg(test)]
@@ -170,13 +143,11 @@ mod tests {
     }
 
     #[test]
-    fn test_bitsliced_encrypt_decrypt() {
+    fn test_bitsliced_block_encrypt_decrypt() {
         for case in &CASES {
-            let mut ciphertext = [0; BLOCK_SIZE];
-            bitsliced_encrypt(&case.plaintext, &case.key, &mut ciphertext);
-
-            let mut plaintext = [0; BLOCK_SIZE];
-            bitsliced_decrypt(&ciphertext, &case.key, &mut plaintext);
+            let round_keys = precompute_round_keys(&case.key);
+            let ciphertext = bitsliced_encrypt_block(&case.plaintext, &round_keys);
+            let plaintext = bitsliced_decrypt_block(&ciphertext, &round_keys);
 
             assert_eq!(case.plaintext, plaintext);
         }
