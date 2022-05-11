@@ -2,7 +2,7 @@ use crate::{swap_move, swap_move_single};
 use crate::gift128::{Block, BLOCK_SIZE, State};
 
 #[must_use]
-pub fn pack(input: &Block) -> State {
+pub(super) fn pack(input: &Block) -> State<u32> {
     let mut s0 = ((input[6] as u32) << 24)
         | ((input[7] as u32) << 16)
         | ((input[14] as u32) << 8)
@@ -36,12 +36,12 @@ pub fn pack(input: &Block) -> State {
     (s1, s3) = swap_move(s1, s3, 0x00f000f0, 8);
     (s2, s3) = swap_move(s2, s3, 0x0f000f00, 4);
 
-    (s0, s1, s2, s3)
+    State(s0, s1, s2, s3)
 }
 
 #[must_use]
-pub fn unpack(state: State) -> Block {
-    let (mut s0, mut s1, mut s2, mut s3) = state;
+pub(super) fn unpack(state: State<u32>) -> Block {
+    let State(mut s0, mut s1, mut s2, mut s3) = state;
 
     // TODO: use macro for swap_move
     (s2, s3) = swap_move(s2, s3, 0x0f000f00, 4);
@@ -80,18 +80,18 @@ pub fn unpack(state: State) -> Block {
 }
 
 #[must_use]
-pub fn bitsliced_pack(input: &Block) -> State {
+pub(super) fn bitsliced_pack(input: &Block) -> State<u32> {
     let s0 = u32::from_le_bytes([input[0], input[1], input[2], input[3]]).swap_bytes();
     let s1 = u32::from_le_bytes([input[4], input[5], input[6], input[7]]).swap_bytes();
     let s2 = u32::from_le_bytes([input[8], input[9], input[10], input[11]]).swap_bytes();
     let s3 = u32::from_le_bytes([input[12], input[13], input[14], input[15]]).swap_bytes();
 
-    (s0, s1, s2, s3)
+    State(s0, s1, s2, s3)
 }
 
 #[must_use]
-pub fn bitsliced_unpack(state: State) -> Block {
-    let (s0, s1, s2, s3) = state;
+pub(super) fn bitsliced_unpack(state: State<u32>) -> Block {
+    let State(s0, s1, s2, s3) = state;
     let mut block = [0; BLOCK_SIZE];
     block[..4].copy_from_slice(&s0.to_be_bytes());
     block[4..8].copy_from_slice(&s1.to_be_bytes());

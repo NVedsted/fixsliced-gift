@@ -6,12 +6,16 @@ mod key_schedule;
 mod packing;
 mod rounds;
 mod sbox;
+mod rotate;
+mod masking;
 
 const KEY_SIZE: usize = 16;
 const BLOCK_SIZE: usize = 16;
 
-type State = (u32, u32, u32, u32);
-type Block = [u8; BLOCK_SIZE];
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct State<T>(T, T, T, T);
+
+pub type Block = [u8; BLOCK_SIZE];
 pub type Key = [u8; KEY_SIZE];
 
 pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
@@ -52,6 +56,63 @@ pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
         let state = inv_rounds(pack(ciphertext_block), &round_keys);
 
         plaintext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&unpack(state));
+    }
+}
+
+pub fn encrypt_masked(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
+    if plaintext.len() % BLOCK_SIZE != 0 {
+        panic!("plaintext size is not a multiple of 16");
+    }
+
+    if plaintext.len() != ciphertext.len() {
+        panic!("ciphertext size differs from plaintext size");
+    }
+
+    // TODO: mask round keys
+    let round_keys = precompute_round_keys(key);
+    for (i, chunk) in plaintext.chunks(BLOCK_SIZE).enumerate() {
+        // TODO: annoying runtime check
+        let plaintext_block = chunk.try_into().expect("invalid chunk length");
+
+        let initial_state = pack(plaintext_block);
+        // TODO: figure out how to supply random
+        let masks = State(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+
+        let masked_state = State::make_shares(initial_state, masks);
+
+        let result_masked_state = rounds(masked_state, &round_keys);
+
+        let result_state = result_masked_state.recover_shares();
+
+        ciphertext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&unpack(result_state));
+    }
+}
+
+pub fn decrypt_masked(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
+    if ciphertext.len() % 16 != 0 {
+        panic!("ciphertext size is not a multiple of 16");
+    }
+
+    if ciphertext.len() != plaintext.len() {
+        panic!("plaintext size differs from ciphertext size");
+    }
+
+    // TODO: mask round keys
+    let round_keys = precompute_round_keys(key);
+
+    for (i, chunk) in ciphertext.chunks(BLOCK_SIZE).enumerate() {
+        // TODO: annoying runtime check
+        let ciphertext_block = chunk.try_into().expect("invalid chunk length");
+
+        let initial_state = pack(ciphertext_block);
+        // TODO: figure out how to supply random
+        let masks = State(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+        let masked_state = State::make_shares(initial_state, masks);
+        let result_masked_state = inv_rounds(masked_state, &round_keys);
+
+        let result_state = result_masked_state.recover_shares();
+
+        plaintext[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE].copy_from_slice(&unpack(result_state));
     }
 }
 
@@ -138,6 +199,24 @@ mod tests {
         for case in &CASES {
             let mut plaintext = [0; BLOCK_SIZE];
             decrypt(&case.ciphertext, &case.key, &mut plaintext);
+            assert_eq!(plaintext, case.plaintext);
+        }
+    }
+
+    #[test]
+    fn test_masked_encrypt() {
+        for case in &CASES {
+            let mut ciphertext = [0; BLOCK_SIZE];
+            encrypt_masked(&case.plaintext, &case.key, &mut ciphertext);
+            assert_eq!(ciphertext, case.ciphertext);
+        }
+    }
+
+    #[test]
+    fn test_masked_decrypt() {
+        for case in &CASES {
+            let mut plaintext = [0; BLOCK_SIZE];
+            decrypt_masked(&case.ciphertext, &case.key, &mut plaintext);
             assert_eq!(plaintext, case.plaintext);
         }
     }
