@@ -1,8 +1,8 @@
-use crate::gift128::key_schedule::{precompute_round_keys, RoundKeys};
+use crate::gift128::key_schedule::{precompute_masked_round_keys, precompute_round_keys, RoundKeys};
 use crate::gift128::packing::{bitsliced_pack, bitsliced_unpack, pack, unpack};
 use crate::gift128::rounds::{inv_rounds, rounds};
 
-mod key_schedule;
+pub mod key_schedule;
 mod packing;
 mod rounds;
 mod sbox;
@@ -68,8 +68,7 @@ pub fn encrypt_masked(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
         panic!("ciphertext size differs from plaintext size");
     }
 
-    // TODO: mask round keys
-    let round_keys = precompute_round_keys(key);
+    let round_keys = precompute_masked_round_keys(key);
     for (i, chunk) in plaintext.chunks(BLOCK_SIZE).enumerate() {
         // TODO: annoying runtime check
         let plaintext_block = chunk.try_into().expect("invalid chunk length");
@@ -97,8 +96,7 @@ pub fn decrypt_masked(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
         panic!("plaintext size differs from ciphertext size");
     }
 
-    // TODO: mask round keys
-    let round_keys = precompute_round_keys(key);
+    let round_keys = precompute_masked_round_keys(key);
 
     for (i, chunk) in ciphertext.chunks(BLOCK_SIZE).enumerate() {
         // TODO: annoying runtime check
@@ -117,14 +115,14 @@ pub fn decrypt_masked(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
 }
 
 #[must_use]
-pub fn bitsliced_encrypt_block(plaintext: &Block, round_keys: &RoundKeys) -> Block {
+pub fn bitsliced_encrypt_block(plaintext: &Block, round_keys: &RoundKeys<u32>) -> Block {
     let initial_state = bitsliced_pack(&plaintext);
     let final_state = rounds(initial_state, &round_keys);
     bitsliced_unpack(final_state)
 }
 
 #[must_use]
-pub fn bitsliced_decrypt_block(ciphertext: &Block, round_keys: &RoundKeys) -> Block {
+pub fn bitsliced_decrypt_block(ciphertext: &Block, round_keys: &RoundKeys<u32>) -> Block {
     let initial_state = bitsliced_pack(&ciphertext);
     let final_state = inv_rounds(initial_state, &round_keys);
     bitsliced_unpack(final_state)

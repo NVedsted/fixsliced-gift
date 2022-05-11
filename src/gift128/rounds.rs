@@ -96,7 +96,7 @@ impl<T> RoundTraits for T
 
 // TODO: possible to fix size on slices?
 #[must_use]
-pub(super) fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[u32], round_constants: &[u32]) -> State<T> {
+pub(super) fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     State(s0, s1, s2, s3) = sbox(State(s0, s1, s2, s3));
     s3 = s3.nibble_ror_1();
@@ -144,7 +144,7 @@ pub(super) fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[u32
 
 // TODO: possible to fix size on slices?
 #[must_use]
-fn inv_quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[u32], round_constants: &[u32]) -> State<T> {
+fn inv_quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     s0 ^= s3;
     s3 ^= s0;
@@ -190,7 +190,7 @@ fn inv_quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[u32], roun
     State(s0, s1, s2, s3)
 }
 
-pub(super) fn rounds<T: RoundTraits>(mut state: State<T>, round_keys: &RoundKeys) -> State<T> {
+pub(super) fn rounds<T: RoundTraits>(mut state: State<T>, round_keys: &RoundKeys<T>) -> State<T> {
     for i in (0..ROUNDS).step_by(5) {
         state = quintuple_round(
             state,
@@ -202,7 +202,7 @@ pub(super) fn rounds<T: RoundTraits>(mut state: State<T>, round_keys: &RoundKeys
     state
 }
 
-pub(super) fn inv_rounds<T: RoundTraits>(mut state: State<T>, round_keys: &RoundKeys) -> State<T> {
+pub(super) fn inv_rounds<T: RoundTraits>(mut state: State<T>, round_keys: &RoundKeys<T>) -> State<T> {
     for i in (0..ROUNDS).step_by(5).rev() {
         state = inv_quintuple_round(
             state,
