@@ -173,10 +173,8 @@ pub fn precompute_round_keys(key: &Key) -> RoundKeys<u32> {
 }
 
 #[must_use]
-pub fn precompute_masked_round_keys(key: &Key) -> RoundKeys<BinaryMask<u32>> {
+pub fn precompute_masked_round_keys(key: &Key, masks: (u32, u32, u32, u32)) -> RoundKeys<BinaryMask<u32>> {
     let mut round_keys = [BinaryMask::make_shares(0, 0); ROUNDS * 2];
-    // TODO: figure out how to supply random
-    let masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
     // TODO: swapping bytes likely leaks!
     round_keys[0] = BinaryMask::make_shares(u32::from_le_bytes([key[12], key[13], key[14], key[15]]).swap_bytes(), masks.0);
     round_keys[1] = BinaryMask::make_shares(u32::from_le_bytes([key[4], key[5], key[6], key[7]]).swap_bytes(), masks.1);
@@ -199,7 +197,8 @@ mod tests {
             0x99, 0x02, 0x8f, 0xa9, 0xf9, 0x0a, 0xd8, 0x37,
         ];
         let round_keys = precompute_round_keys(&key);
-        let masked_rounds_keys = precompute_masked_round_keys(&key);
+        let key_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+        let masked_rounds_keys = precompute_masked_round_keys(&key, key_masks);
 
         for (masked, expected) in masked_rounds_keys.into_iter().zip(round_keys) {
             assert_eq!(masked.recover_shares(), expected);

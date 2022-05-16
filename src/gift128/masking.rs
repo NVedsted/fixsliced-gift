@@ -1,4 +1,5 @@
 use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr, ShrAssign};
+
 use crate::gift128::rotate::Rotate;
 use crate::gift128::State;
 
@@ -153,16 +154,18 @@ impl<T: Rotate> Rotate for BinaryMask<T> {
     }
 }
 
-impl<T: BitXor<Output=T> + Copy> State<BinaryMask<T>> {
-    pub fn make_shares(state: State<T>, masks: State<T>) -> Self {
+impl<T: BitXor<Output=T> + Copy> State<T> {
+    pub fn make_shares(self, masks: (T, T, T, T)) -> State<BinaryMask<T>> {
         State(
-            BinaryMask::make_shares(state.0, masks.0),
-            BinaryMask::make_shares(state.1, masks.1),
-            BinaryMask::make_shares(state.2, masks.2),
-            BinaryMask::make_shares(state.3, masks.3),
+            BinaryMask::make_shares(self.0, masks.0),
+            BinaryMask::make_shares(self.1, masks.1),
+            BinaryMask::make_shares(self.2, masks.2),
+            BinaryMask::make_shares(self.3, masks.3),
         )
     }
+}
 
+impl<T: BitXor<Output=T> + Copy> State<BinaryMask<T>> {
     pub fn recover_shares(self) -> State<T> {
         State(
             self.0.recover_shares(),

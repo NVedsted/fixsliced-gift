@@ -41,9 +41,9 @@ mod tests {
     #[test]
     fn test_masked_sbox() {
         let initial_state = State(0xd576370du32, 0x8b52c000u32, 0x2bafc0ccu32, 0xa3487987u32);
-        let masks = State(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+        let masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
 
-        let masked_state = State::make_shares(initial_state, masks);
+        let masked_state = initial_state.make_shares(masks);
         let masked_output = sbox(masked_state);
 
         let output = masked_output.recover_shares();
@@ -53,9 +53,9 @@ mod tests {
     #[test]
     fn test_masked_inv_sbox() {
         let initial_state = State(0xd576370du32, 0x8b52c000u32, 0x2bafc0ccu32, 0xa3487987u32);
-        let masks = State(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+        let masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
 
-        let masked_state = State::make_shares(initial_state, masks);
+        let masked_state = initial_state.make_shares(masks);
         let masked_output = inv_sbox(masked_state);
 
         let output = masked_output.recover_shares();

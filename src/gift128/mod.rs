@@ -1,4 +1,5 @@
 use crate::gift128::key_schedule::{precompute_masked_round_keys, precompute_round_keys, RoundKeys};
+use crate::gift128::masking::BinaryMask;
 use crate::gift128::packing::{bitsliced_pack, bitsliced_unpack, pack, unpack};
 use crate::gift128::rounds::{inv_rounds, rounds};
 
@@ -59,7 +60,7 @@ pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
     }
 }
 
-pub fn encrypt_masked(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
+pub fn encrypt_masked(plaintext: &[u8], state_masks: &[(u32, u32, u32, u32)], key: &Key, ciphertext: &mut [u8], key_masks: (u32, u32, u32, u32)) {
     if plaintext.len() % BLOCK_SIZE != 0 {
         panic!("plaintext size is not a multiple of 16");
     }
@@ -68,16 +69,21 @@ pub fn encrypt_masked(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
         panic!("ciphertext size differs from plaintext size");
     }
 
-    let round_keys = precompute_masked_round_keys(key);
-    for (i, chunk) in plaintext.chunks(BLOCK_SIZE).enumerate() {
+    let round_keys = precompute_masked_round_keys(key, key_masks);
+
+    let chunks = plaintext.chunks(BLOCK_SIZE);
+
+    if chunks.len() != state_masks.len() {
+        panic!("plaintext chunk count differs from amount of state masks");
+    }
+
+    for (i, (chunk, masks)) in chunks.zip(state_masks).enumerate() {
         // TODO: annoying runtime check
         let plaintext_block = chunk.try_into().expect("invalid chunk length");
 
         let initial_state = pack(plaintext_block);
-        // TODO: figure out how to supply random
-        let masks = State(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
 
-        let masked_state = State::make_shares(initial_state, masks);
+        let masked_state = initial_state.make_shares(masks.clone());
 
         let result_masked_state = rounds(masked_state, &round_keys);
 
@@ -87,7 +93,7 @@ pub fn encrypt_masked(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
     }
 }
 
-pub fn decrypt_masked(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
+pub fn decrypt_masked(ciphertext: &[u8], state_masks: &[(u32, u32, u32, u32)], key: &Key, plaintext: &mut [u8], key_masks: (u32, u32, u32, u32)) {
     if ciphertext.len() % 16 != 0 {
         panic!("ciphertext size is not a multiple of 16");
     }
@@ -96,16 +102,20 @@ pub fn decrypt_masked(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
         panic!("plaintext size differs from ciphertext size");
     }
 
-    let round_keys = precompute_masked_round_keys(key);
+    let round_keys = precompute_masked_round_keys(key, key_masks);
 
-    for (i, chunk) in ciphertext.chunks(BLOCK_SIZE).enumerate() {
+    let chunks = ciphertext.chunks(BLOCK_SIZE);
+
+    if chunks.len() != state_masks.len() {
+        panic!("ciphertext chunk count differs from amount of state masks");
+    }
+
+    for (i, (chunk, masks)) in ciphertext.chunks(BLOCK_SIZE).zip(state_masks).enumerate() {
         // TODO: annoying runtime check
         let ciphertext_block = chunk.try_into().expect("invalid chunk length");
 
         let initial_state = pack(ciphertext_block);
-        // TODO: figure out how to supply random
-        let masks = State(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
-        let masked_state = State::make_shares(initial_state, masks);
+        let masked_state = initial_state.make_shares(masks.clone());
         let result_masked_state = inv_rounds(masked_state, &round_keys);
 
         let result_state = result_masked_state.recover_shares();
@@ -125,6 +135,24 @@ pub fn bitsliced_encrypt_block(plaintext: &Block, round_keys: &RoundKeys<u32>) -
 pub fn bitsliced_decrypt_block(ciphertext: &Block, round_keys: &RoundKeys<u32>) -> Block {
     let initial_state = bitsliced_pack(&ciphertext);
     let final_state = inv_rounds(initial_state, &round_keys);
+    bitsliced_unpack(final_state)
+}
+
+#[must_use]
+pub fn bitsliced_masked_encrypt_block(plaintext: &Block, mask: (u32, u32, u32, u32), round_keys: &RoundKeys<BinaryMask<u32>>) -> Block {
+    let initial_state = bitsliced_pack(&plaintext);
+    let initial_masked_state = initial_state.make_shares(mask);
+    let final_masked_state = rounds(initial_masked_state, &round_keys);
+    let final_state = final_masked_state.recover_shares();
+    bitsliced_unpack(final_state)
+}
+
+#[must_use]
+pub fn bitsliced_masked_decrypt_block(ciphertext: &Block, mask: (u32, u32, u32, u32), round_keys: &RoundKeys<BinaryMask<u32>>) -> Block {
+    let initial_state = bitsliced_pack(&ciphertext);
+    let initial_masked_state = initial_state.make_shares(mask);
+    let final_masked_state = inv_rounds(initial_masked_state, &round_keys);
+    let final_state = final_masked_state.recover_shares();
     bitsliced_unpack(final_state)
 }
 
@@ -203,18 +231,22 @@ mod tests {
 
     #[test]
     fn test_masked_encrypt() {
+        let state_masks = [(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32)];
+        let key_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
         for case in &CASES {
             let mut ciphertext = [0; BLOCK_SIZE];
-            encrypt_masked(&case.plaintext, &case.key, &mut ciphertext);
+            encrypt_masked(&case.plaintext, &state_masks, &case.key, &mut ciphertext, key_masks);
             assert_eq!(ciphertext, case.ciphertext);
         }
     }
 
     #[test]
     fn test_masked_decrypt() {
+        let state_masks = [(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32)];
+        let key_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
         for case in &CASES {
             let mut plaintext = [0; BLOCK_SIZE];
-            decrypt_masked(&case.ciphertext, &case.key, &mut plaintext);
+            decrypt_masked(&case.ciphertext, &state_masks, &case.key, &mut plaintext, key_masks);
             assert_eq!(plaintext, case.plaintext);
         }
     }
@@ -225,6 +257,20 @@ mod tests {
             let round_keys = precompute_round_keys(&case.key);
             let ciphertext = bitsliced_encrypt_block(&case.plaintext, &round_keys);
             let plaintext = bitsliced_decrypt_block(&ciphertext, &round_keys);
+
+            assert_eq!(case.plaintext, plaintext);
+        }
+    }
+
+    #[test]
+    fn test_masked_bitsliced_block_encrypt_decrypt() {
+        let encrypt_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+        let decrypt_masks = (0x1d56608eu32, 0x550aaf8cu32, 0xb3d27d98u32, 0x4fffa1b4u32);
+        let key_masks = (0x1d54f0aeu32, 0x540aaf8cu32, 0xb3d77d46u32, 0x4aaca1b4u32);
+        for case in &CASES {
+            let round_keys = precompute_masked_round_keys(&case.key, key_masks.clone());
+            let ciphertext = bitsliced_masked_encrypt_block(&case.plaintext, encrypt_masks.clone(), &round_keys);
+            let plaintext = bitsliced_masked_decrypt_block(&ciphertext, decrypt_masks.clone(), &round_keys);
 
             assert_eq!(case.plaintext, plaintext);
         }
