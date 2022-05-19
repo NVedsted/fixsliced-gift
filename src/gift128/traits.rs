@@ -8,3 +8,13 @@ impl Rotate for u32 {
         self.rotate_right(rhs)
     }
 }
+
+pub trait SwapBytes {
+    fn swap_bytes(self) -> Self;
+}
+
+impl SwapBytes for u32 {
+    fn swap_bytes(self) -> Self {
+        self.swap_bytes()
+    }
+}

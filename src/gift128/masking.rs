@@ -1,6 +1,6 @@
 use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr, ShrAssign};
 
-use crate::gift128::rotate::Rotate;
+use crate::gift128::traits::{Rotate, SwapBytes};
 use crate::gift128::State;
 
 #[derive(Copy, Clone, Debug)]
@@ -176,10 +176,19 @@ impl<T: BitXor<Output=T> + Copy> State<BinaryMask<T>> {
     }
 }
 
+impl<T: SwapBytes> SwapBytes for BinaryMask<T> {
+    fn swap_bytes(self) -> Self {
+        Self(
+            self.0.swap_bytes(),
+            self.1.swap_bytes(),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::gift128::masking::BinaryMask;
-    use crate::gift128::rotate::Rotate;
+    use crate::gift128::traits::{Rotate, SwapBytes};
     use crate::gift128::rounds::StateOperations;
 
     #[test]
@@ -265,6 +274,18 @@ mod tests {
         let result = masked_result.recover_shares();
 
         assert_eq!(result, value.rotate_right(5));
+    }
+
+    #[test]
+    fn test_swap_bytes() {
+        let value = 0xD576370Du32;
+        let mask = 0xB751F5EFu32;
+        let masked_value = BinaryMask::make_shares(value, mask);
+
+        let masked_result = masked_value.swap_bytes();
+        let result = masked_result.recover_shares();
+
+        assert_eq!(result, value.swap_bytes());
     }
 
     #[test]

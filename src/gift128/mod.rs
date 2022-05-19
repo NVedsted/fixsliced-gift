@@ -7,7 +7,7 @@ pub mod key_schedule;
 mod packing;
 mod rounds;
 mod sbox;
-mod rotate;
+mod traits;
 mod masking;
 
 const KEY_SIZE: usize = 16;

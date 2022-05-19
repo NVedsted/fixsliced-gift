@@ -2,7 +2,7 @@ use core::ops::{BitAnd, BitOr, Shl, Shr};
 
 use crate::gift128::Key;
 use crate::gift128::masking::BinaryMask;
-use crate::gift128::rotate::Rotate;
+use crate::gift128::traits::{Rotate, SwapBytes};
 use crate::gift128::rounds::ROUNDS;
 use crate::swapmove::{swap_move_single, SwapMoveTraits};
 
@@ -175,11 +175,10 @@ pub fn precompute_round_keys(key: &Key) -> RoundKeys<u32> {
 #[must_use]
 pub fn precompute_masked_round_keys(key: &Key, masks: (u32, u32, u32, u32)) -> RoundKeys<BinaryMask<u32>> {
     let mut round_keys = [BinaryMask::make_shares(0, 0); ROUNDS * 2];
-    // TODO: swapping bytes likely leaks!
-    round_keys[0] = BinaryMask::make_shares(u32::from_le_bytes([key[12], key[13], key[14], key[15]]).swap_bytes(), masks.0);
-    round_keys[1] = BinaryMask::make_shares(u32::from_le_bytes([key[4], key[5], key[6], key[7]]).swap_bytes(), masks.1);
-    round_keys[2] = BinaryMask::make_shares(u32::from_le_bytes([key[8], key[9], key[10], key[11]]).swap_bytes(), masks.2);
-    round_keys[3] = BinaryMask::make_shares(u32::from_le_bytes([key[0], key[1], key[2], key[3]]).swap_bytes(), masks.3);
+    round_keys[0] = BinaryMask::make_shares(u32::from_le_bytes([key[12], key[13], key[14], key[15]]), masks.0).swap_bytes();
+    round_keys[1] = BinaryMask::make_shares(u32::from_le_bytes([key[4], key[5], key[6], key[7]]), masks.1).swap_bytes();
+    round_keys[2] = BinaryMask::make_shares(u32::from_le_bytes([key[8], key[9], key[10], key[11]]), masks.2).swap_bytes();
+    round_keys[3] = BinaryMask::make_shares(u32::from_le_bytes([key[0], key[1], key[2], key[3]]), masks.3).swap_bytes();
 
     fill_round_keys(&mut round_keys);
 

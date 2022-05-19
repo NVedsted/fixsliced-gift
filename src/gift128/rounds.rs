@@ -1,7 +1,7 @@
 use core::ops::{BitAnd, BitOr, BitXorAssign, Shl, Shr};
 
 use crate::gift128::key_schedule::RoundKeys;
-use crate::gift128::rotate::Rotate;
+use crate::gift128::traits::Rotate;
 use crate::gift128::sbox::{inv_sbox, sbox, SboxTraits};
 use crate::gift128::State;
 use crate::swap_move_single;
