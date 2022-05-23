@@ -18,6 +18,7 @@ struct State<T>(T, T, T, T);
 
 pub type Block = [u8; BLOCK_SIZE];
 pub type Key = [u8; KEY_SIZE];
+pub type MaskedKey = [BinaryMask<u8>; KEY_SIZE];
 
 pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
     if plaintext.len() % BLOCK_SIZE != 0 {
@@ -60,7 +61,7 @@ pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
     }
 }
 
-pub fn encrypt_masked(plaintext: &[u8], state_masks: &[(u32, u32, u32, u32)], key: &Key, ciphertext: &mut [u8], key_masks: (u32, u32, u32, u32)) {
+pub fn encrypt_masked(plaintext: &[u8], state_masks: &[(u32, u32, u32, u32)], key: &MaskedKey, ciphertext: &mut [u8]) {
     if plaintext.len() % BLOCK_SIZE != 0 {
         panic!("plaintext size is not a multiple of 16");
     }
@@ -69,7 +70,7 @@ pub fn encrypt_masked(plaintext: &[u8], state_masks: &[(u32, u32, u32, u32)], ke
         panic!("ciphertext size differs from plaintext size");
     }
 
-    let round_keys = precompute_masked_round_keys(key, key_masks);
+    let round_keys = precompute_masked_round_keys(key);
 
     let chunks = plaintext.chunks(BLOCK_SIZE);
 
@@ -93,7 +94,7 @@ pub fn encrypt_masked(plaintext: &[u8], state_masks: &[(u32, u32, u32, u32)], ke
     }
 }
 
-pub fn decrypt_masked(ciphertext: &[u8], state_masks: &[(u32, u32, u32, u32)], key: &Key, plaintext: &mut [u8], key_masks: (u32, u32, u32, u32)) {
+pub fn decrypt_masked(ciphertext: &[u8], state_masks: &[(u32, u32, u32, u32)], key: &MaskedKey, plaintext: &mut [u8]) {
     if ciphertext.len() % 16 != 0 {
         panic!("ciphertext size is not a multiple of 16");
     }
@@ -102,7 +103,7 @@ pub fn decrypt_masked(ciphertext: &[u8], state_masks: &[(u32, u32, u32, u32)], k
         panic!("plaintext size differs from ciphertext size");
     }
 
-    let round_keys = precompute_masked_round_keys(key, key_masks);
+    let round_keys = precompute_masked_round_keys(key);
 
     let chunks = ciphertext.chunks(BLOCK_SIZE);
 
@@ -159,6 +160,7 @@ pub fn bitsliced_masked_decrypt_block(ciphertext: &Block, mask: (u32, u32, u32, 
 #[cfg(test)]
 mod tests {
     use crate::gift128::*;
+    use crate::gift128::key_schedule::mask_key;
 
     struct TestTriple {
         key: Key,
@@ -232,10 +234,14 @@ mod tests {
     #[test]
     fn test_masked_encrypt() {
         let state_masks = [(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32)];
-        let key_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+        let key_masks = [
+            0x1d, 0x54, 0xf0, 0xae, 0x54, 0x0a, 0xaf, 0x8c,
+            0xb3, 0xd7, 0x7d, 0x46, 0x4a, 0xac, 0xa1, 0xb4
+        ];
         for case in &CASES {
+            let masked_key = mask_key(&case.key, &key_masks);
             let mut ciphertext = [0; BLOCK_SIZE];
-            encrypt_masked(&case.plaintext, &state_masks, &case.key, &mut ciphertext, key_masks);
+            encrypt_masked(&case.plaintext, &state_masks, &masked_key, &mut ciphertext);
             assert_eq!(ciphertext, case.ciphertext);
         }
     }
@@ -243,10 +249,14 @@ mod tests {
     #[test]
     fn test_masked_decrypt() {
         let state_masks = [(0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32)];
-        let key_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
+        let key_masks = [
+            0x1d, 0x54, 0xf0, 0xae, 0x54, 0x0a, 0xaf, 0x8c,
+            0xb3, 0xd7, 0x7d, 0x46, 0x4a, 0xac, 0xa1, 0xb4
+        ];
         for case in &CASES {
+            let masked_key = mask_key(&case.key, &key_masks);
             let mut plaintext = [0; BLOCK_SIZE];
-            decrypt_masked(&case.ciphertext, &state_masks, &case.key, &mut plaintext, key_masks);
+            decrypt_masked(&case.ciphertext, &state_masks, &masked_key, &mut plaintext);
             assert_eq!(plaintext, case.plaintext);
         }
     }
@@ -266,9 +276,13 @@ mod tests {
     fn test_masked_bitsliced_block_encrypt_decrypt() {
         let encrypt_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
         let decrypt_masks = (0x1d56608eu32, 0x550aaf8cu32, 0xb3d27d98u32, 0x4fffa1b4u32);
-        let key_masks = (0x1d54f0aeu32, 0x540aaf8cu32, 0xb3d77d46u32, 0x4aaca1b4u32);
+        let key_masks = [
+            0x1d, 0x54, 0xf0, 0xae, 0x54, 0x0a, 0xaf, 0x8c,
+            0xb3, 0xd7, 0x7d, 0x46, 0x4a, 0xac, 0xa1, 0xb4
+        ];
         for case in &CASES {
-            let round_keys = precompute_masked_round_keys(&case.key, key_masks.clone());
+            let masked_key = mask_key(&case.key, &key_masks);
+            let round_keys = precompute_masked_round_keys(&masked_key);
             let ciphertext = bitsliced_masked_encrypt_block(&case.plaintext, encrypt_masks.clone(), &round_keys);
             let plaintext = bitsliced_masked_decrypt_block(&ciphertext, decrypt_masks.clone(), &round_keys);
 

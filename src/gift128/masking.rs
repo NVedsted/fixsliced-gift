@@ -4,7 +4,7 @@ use crate::gift128::traits::{Rotate, SwapBytes};
 use crate::gift128::State;
 
 #[derive(Copy, Clone, Debug)]
-pub struct BinaryMask<T>(T, T);
+pub struct BinaryMask<T>(pub T, pub T);
 
 impl<T: BitXor<Output=T> + Copy> BinaryMask<T> {
     pub fn make_shares(v: T, m: T) -> Self {

@@ -1,6 +1,6 @@
 use core::ops::{BitAnd, BitOr, Shl, Shr};
 
-use crate::gift128::Key;
+use crate::gift128::{Key, KEY_SIZE};
 use crate::gift128::masking::BinaryMask;
 use crate::gift128::traits::{Rotate, SwapBytes};
 use crate::gift128::rounds::ROUNDS;
@@ -173,12 +173,33 @@ pub fn precompute_round_keys(key: &Key) -> RoundKeys<u32> {
 }
 
 #[must_use]
-pub fn precompute_masked_round_keys(key: &Key, masks: (u32, u32, u32, u32)) -> RoundKeys<BinaryMask<u32>> {
+pub fn mask_key(key: &[u8; KEY_SIZE], masks: &[u8; KEY_SIZE]) -> [BinaryMask<u8>; KEY_SIZE] {
+    let mut masked_key = [BinaryMask(0, 0); KEY_SIZE];
+    for i in 0..KEY_SIZE {
+        masked_key[i] = BinaryMask::make_shares(key[i], masks[i]);
+    }
+    masked_key
+}
+
+#[must_use]
+pub fn precompute_masked_round_keys(key: &[BinaryMask<u8>; KEY_SIZE]) -> RoundKeys<BinaryMask<u32>> {
     let mut round_keys = [BinaryMask::make_shares(0, 0); ROUNDS * 2];
-    round_keys[0] = BinaryMask::make_shares(u32::from_le_bytes([key[12], key[13], key[14], key[15]]), masks.0).swap_bytes();
-    round_keys[1] = BinaryMask::make_shares(u32::from_le_bytes([key[4], key[5], key[6], key[7]]), masks.1).swap_bytes();
-    round_keys[2] = BinaryMask::make_shares(u32::from_le_bytes([key[8], key[9], key[10], key[11]]), masks.2).swap_bytes();
-    round_keys[3] = BinaryMask::make_shares(u32::from_le_bytes([key[0], key[1], key[2], key[3]]), masks.3).swap_bytes();
+    round_keys[0] = BinaryMask(
+        u32::from_le_bytes([key[12].0, key[13].0, key[14].0, key[15].0]),
+        u32::from_le_bytes([key[12].1, key[13].1, key[14].1, key[15].1]),
+    ).swap_bytes();
+    round_keys[1] = BinaryMask(
+        u32::from_le_bytes([key[4].0, key[5].0, key[6].0, key[7].0]),
+        u32::from_le_bytes([key[4].1, key[5].1, key[6].1, key[7].1]),
+    ).swap_bytes();
+    round_keys[2] = BinaryMask(
+        u32::from_le_bytes([key[8].0, key[9].0, key[10].0, key[11].0]),
+        u32::from_le_bytes([key[8].1, key[9].1, key[10].1, key[11].1]),
+    ).swap_bytes();
+    round_keys[3] = BinaryMask(
+        u32::from_le_bytes([key[0].0, key[1].0, key[2].0, key[3].0]),
+        u32::from_le_bytes([key[0].1, key[1].1, key[2].1, key[3].1]),
+    ).swap_bytes();
 
     fill_round_keys(&mut round_keys);
 
@@ -187,20 +208,36 @@ pub fn precompute_masked_round_keys(key: &Key, masks: (u32, u32, u32, u32)) -> R
 
 #[cfg(test)]
 mod tests {
-    use crate::gift128::key_schedule::{precompute_masked_round_keys, precompute_round_keys};
+    use crate::gift128::key_schedule::{mask_key, precompute_masked_round_keys, precompute_round_keys};
+    use crate::gift128::KEY_SIZE;
+
+    const KEY: [u8; KEY_SIZE] = [
+        0xd0, 0xf5, 0xc5, 0x9a, 0x77, 0x00, 0xd3, 0xe7,
+        0x99, 0x02, 0x8f, 0xa9, 0xf9, 0x0a, 0xd8, 0x37u8,
+    ];
+    const KEY_MASKS: [u8; KEY_SIZE] = [
+        0x1d, 0x54, 0xf0, 0x8e, 0x55, 0x0a, 0xaf, 0x8c,
+        0xb3, 0xd2, 0x7d, 0x46, 0x4a, 0xaf, 0xa1, 0xb4u8,
+    ];
 
     #[test]
     fn test_masked_round_keys() {
-        let key = [
-            0xd0, 0xf5, 0xc5, 0x9a, 0x77, 0x00, 0xd3, 0xe7,
-            0x99, 0x02, 0x8f, 0xa9, 0xf9, 0x0a, 0xd8, 0x37,
-        ];
-        let round_keys = precompute_round_keys(&key);
-        let key_masks = (0x1d54f08eu32, 0x550aaf8cu32, 0xb3d27d46u32, 0x4aafa1b4u32);
-        let masked_rounds_keys = precompute_masked_round_keys(&key, key_masks);
+        let round_keys = precompute_round_keys(&KEY);
+        let masked_key = mask_key(&KEY, &KEY_MASKS);
+        let masked_rounds_keys = precompute_masked_round_keys(&masked_key);
 
         for (masked, expected) in masked_rounds_keys.into_iter().zip(round_keys) {
             assert_eq!(masked.recover_shares(), expected);
         }
+    }
+
+    #[test]
+    fn test_mask_key() {
+        let masked_key = mask_key(&KEY, &KEY_MASKS);
+        let mut unmasked_key = [0u8; KEY_SIZE];
+        for i in 0..KEY_SIZE {
+            unmasked_key[i] = masked_key[i].recover_shares();
+        }
+        assert_eq!(unmasked_key, KEY);
     }
 }
