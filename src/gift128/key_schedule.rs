@@ -174,7 +174,7 @@ pub fn precompute_round_keys(key: &Key) -> RoundKeys<u32> {
 
 #[must_use]
 pub fn mask_key(key: &[u8; KEY_SIZE], masks: &[u8; KEY_SIZE]) -> [BinaryMask<u8>; KEY_SIZE] {
-    let mut masked_key = [BinaryMask(0, 0); KEY_SIZE];
+    let mut masked_key = [Default::default(); KEY_SIZE];
     for i in 0..KEY_SIZE {
         masked_key[i] = BinaryMask::make_shares(key[i], masks[i]);
     }

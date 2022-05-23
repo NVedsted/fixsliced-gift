@@ -185,6 +185,33 @@ impl<T: SwapBytes> SwapBytes for BinaryMask<T> {
     }
 }
 
+impl From<BinaryMask<u32>> for BinaryMask<u8> {
+    fn from(x: BinaryMask<u32>) -> Self {
+        BinaryMask(
+            x.0 as u8,
+            x.1 as u8,
+        )
+    }
+}
+
+impl From<BinaryMask<u8>> for BinaryMask<u32> {
+    fn from(x: BinaryMask<u8>) -> Self {
+        BinaryMask(
+            x.0 as u32,
+            x.1 as u32,
+        )
+    }
+}
+
+impl<T: Default> Default for BinaryMask<T> {
+    fn default() -> Self {
+        BinaryMask(
+            Default::default(),
+            Default::default(),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::gift128::masking::BinaryMask;
