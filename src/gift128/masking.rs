@@ -32,8 +32,8 @@ impl<T> BitAnd<T> for BinaryMask<T>
     type Output = Self;
 
     fn bitand(self, rhs: T) -> Self::Output {
-        let z1 = !(self.0 & rhs);
-        let z2 = !(self.1 & rhs);
+        let z1 = self.0 & rhs;
+        let z2 = self.1 & rhs;
         BinaryMask(z1, z2)
     }
 }
