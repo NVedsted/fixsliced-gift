@@ -52,38 +52,47 @@ pub trait StateOperations {
 
 impl<T> StateOperations for T
     where T: Copy + Shr<u32, Output=Self> + BitAnd<u32, Output=Self> + Shl<u32, Output=Self> + BitOr<Output=Self> {
+    #[inline]
     fn byte_ror_2(self) -> Self {
         ((self >> 2) & 0x3f3f3f3f) | ((self & 0x03030303) << 6)
     }
 
+    #[inline]
     fn byte_ror_4(self) -> Self {
         ((self >> 4) & 0x0f0f0f0f) | ((self & 0x0f0f0f0f) << 4)
     }
 
+    #[inline]
     fn byte_ror_6(self) -> Self {
         ((self >> 6) & 0x03030303) | ((self & 0x3f3f3f3f) << 2)
     }
 
+    #[inline]
     fn half_ror_4(self) -> Self {
         ((self >> 4) & 0x0fff0fff) | ((self & 0x000f000f) << 12)
     }
 
+    #[inline]
     fn half_ror_8(self) -> Self {
         ((self >> 8) & 0x00ff00ff) | ((self & 0x00ff00ff) << 8)
     }
 
+    #[inline]
     fn half_ror_12(self) -> Self {
         ((self >> 12) & 0x000f000f) | ((self & 0x0fff0fff) << 4)
     }
 
+    #[inline]
     fn nibble_ror_1(self) -> Self {
         ((self >> 1) & 0x77777777) | ((self & 0x11111111) << 3)
     }
 
+    #[inline]
     fn nibble_ror_2(self) -> Self {
         ((self >> 2) & 0x33333333) | ((self & 0x33333333) << 2)
     }
 
+    #[inline]
     fn nibble_ror_3(self) -> Self {
         ((self >> 3) & 0x11111111) | ((self & 0x77777777) << 1)
     }
@@ -96,7 +105,8 @@ impl<T> RoundTraits for T
 
 // TODO: possible to fix size on slices?
 #[must_use]
-pub(super) fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
+#[inline(always)]
+fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     State(s0, s1, s2, s3) = sbox(State(s0, s1, s2, s3));
     s3 = s3.nibble_ror_1();
@@ -142,6 +152,7 @@ pub(super) fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T],
 
 // TODO: possible to fix size on slices?
 #[must_use]
+#[inline(always)]
 fn inv_quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     core::mem::swap(&mut s0, &mut s3);

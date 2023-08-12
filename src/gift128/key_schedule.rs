@@ -10,6 +10,7 @@ use crate::swapmove::{swap_move_single, SwapMoveTraits};
 pub type RoundKeys<T> = [T; ROUNDS * 2];
 
 #[must_use]
+#[inline]
 fn key_update<T>(round_key: T) -> T
     where T: Copy + Shr<usize, Output=T> + Shl<usize, Output=T> + BitAnd<u32, Output=T> + BitOr<Output=T> {
     ((round_key >> 12) & 0x0000000f)
@@ -19,6 +20,7 @@ fn key_update<T>(round_key: T) -> T
 }
 
 #[must_use]
+#[inline]
 fn rearrange_round_key0<T: SwapMoveTraits>(mut round_key: T) -> T {
     round_key = swap_move_single(round_key, 0x00550055, 9);
     round_key = swap_move_single(round_key, 0x000f000f, 12);
@@ -27,6 +29,7 @@ fn rearrange_round_key0<T: SwapMoveTraits>(mut round_key: T) -> T {
 }
 
 #[must_use]
+#[inline]
 fn rearrange_round_key1<T: SwapMoveTraits>(mut round_key: T) -> T {
     round_key = swap_move_single(round_key, 0x11111111, 3);
     round_key = swap_move_single(round_key, 0x03030303, 6);
@@ -35,6 +38,7 @@ fn rearrange_round_key1<T: SwapMoveTraits>(mut round_key: T) -> T {
 }
 
 #[must_use]
+#[inline]
 fn rearrange_round_key2<T: SwapMoveTraits>(mut round_key: T) -> T {
     round_key = swap_move_single(round_key, 0x0000aaaa, 15);
     round_key = swap_move_single(round_key, 0x00003333, 18);
@@ -43,6 +47,7 @@ fn rearrange_round_key2<T: SwapMoveTraits>(mut round_key: T) -> T {
 }
 
 #[must_use]
+#[inline]
 fn rearrange_round_key3<T: SwapMoveTraits>(mut round_key: T) -> T {
     round_key = swap_move_single(round_key, 0x0a0a0a0a, 3);
     round_key = swap_move_single(round_key, 0x00cc00cc, 6);
@@ -51,12 +56,14 @@ fn rearrange_round_key3<T: SwapMoveTraits>(mut round_key: T) -> T {
 }
 
 #[must_use]
+#[inline]
 fn key_triple_update_0<T>(round_key: T) -> T
     where T: Copy + BitAnd<u32, Output=T> + BitOr<Output=T> + Rotate {
     (round_key & 0x33333333).rotate_right(24) | (round_key & 0xcccccccc).rotate_right(16)
 }
 
 #[must_use]
+#[inline]
 fn key_double_update_1<T>(round_key: T) -> T
     where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
     ((round_key >> 4) & 0x0f000f00)
@@ -66,6 +73,7 @@ fn key_double_update_1<T>(round_key: T) -> T
 }
 
 #[must_use]
+#[inline]
 fn key_triple_update_1<T>(round_key: T) -> T
     where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
     ((round_key >> 6) & 0x03000300)
@@ -75,18 +83,21 @@ fn key_triple_update_1<T>(round_key: T) -> T
 }
 
 #[must_use]
+#[inline]
 fn key_double_update_2<T>(round_key: T) -> T
     where T: Copy + BitAnd<u32, Output=T> + BitOr<Output=T> + Rotate {
     (round_key & 0xaaaaaaaa).rotate_right(24) | (round_key & 0x55555555).rotate_right(16)
 }
 
 #[must_use]
+#[inline]
 fn key_triple_update_2<T>(round_key: T) -> T
     where T: Copy + BitAnd<u32, Output=T> + BitOr<Output=T> + Rotate {
     (round_key & 0x55555555).rotate_right(24) | (round_key & 0xaaaaaaaa).rotate_right(20)
 }
 
 #[must_use]
+#[inline]
 fn key_double_update_3<T>(round_key: T) -> T
     where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
     ((round_key >> 2) & 0x03030303)
@@ -96,6 +107,7 @@ fn key_double_update_3<T>(round_key: T) -> T
 }
 
 #[must_use]
+#[inline]
 fn key_triple_update_3<T>(round_key: T) -> T
     where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
     ((round_key >> 18) & 0x00003030)
@@ -107,6 +119,7 @@ fn key_triple_update_3<T>(round_key: T) -> T
 }
 
 #[must_use]
+#[inline]
 fn key_double_update_4<T>(round_key: T) -> T
     where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
     ((round_key >> 4) & 0x0fff0000)
@@ -116,6 +129,7 @@ fn key_double_update_4<T>(round_key: T) -> T
 }
 
 #[must_use]
+#[inline]
 fn key_triple_update_4<T>(round_key: T) -> T
     where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
     ((round_key >> 6) & 0x03ff0000)

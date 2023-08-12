@@ -8,6 +8,7 @@ impl<T> SboxTraits for T
     where T: BitXorAssign + Copy + BitAnd<Output=T> + BitXorAssign<u32> + BitOr<Output=T> {}
 
 #[must_use]
+#[inline]
 pub(super) fn sbox<T: SboxTraits>(state: State<T>) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     s1 ^= s0 & s2;
@@ -21,6 +22,7 @@ pub(super) fn sbox<T: SboxTraits>(state: State<T>) -> State<T> {
 }
 
 #[must_use]
+#[inline]
 pub(super) fn inv_sbox<T: SboxTraits>(state: State<T>) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     s2 ^= s3 & s1;

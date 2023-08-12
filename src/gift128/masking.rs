@@ -7,10 +7,12 @@ use crate::gift128::State;
 pub struct BinaryMask<T>(pub T, pub T);
 
 impl<T: BitXor<Output=T> + Copy> BinaryMask<T> {
+    #[inline]
     pub fn make_shares(v: T, m: T) -> Self {
         BinaryMask(v ^ m, m)
     }
 
+    #[inline]
     pub fn recover_shares(self) -> T {
         self.0 ^ self.1
     }
@@ -20,6 +22,7 @@ impl<T> BitAnd for BinaryMask<T>
     where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
     type Output = Self;
 
+    #[inline]
     fn bitand(self, rhs: Self) -> Self::Output {
         let z1 = (self.0 & rhs.0) ^ (self.0 | !rhs.1);
         let z2 = (self.1 & rhs.0) ^ (self.1 | !rhs.1);
@@ -31,6 +34,7 @@ impl<T> BitAnd<T> for BinaryMask<T>
     where T: BitAnd<Output=T> + Not<Output=T> + Copy {
     type Output = Self;
 
+    #[inline]
     fn bitand(self, rhs: T) -> Self::Output {
         let z1 = self.0 & rhs;
         let z2 = self.1 & rhs;
@@ -40,6 +44,8 @@ impl<T> BitAnd<T> for BinaryMask<T>
 
 impl<T> BitAndAssign for BinaryMask<T>
     where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
+
+    #[inline]
     fn bitand_assign(&mut self, rhs: Self) {
         *self = *self & rhs;
     }
@@ -49,6 +55,7 @@ impl<T> BitOr for BinaryMask<T>
     where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
     type Output = Self;
 
+    #[inline]
     fn bitor(self, rhs: Self) -> Self::Output {
         let z1 = (self.0 & rhs.0) ^ (self.0 | rhs.1);
         let z2 = (self.1 | rhs.0) ^ (self.1 & rhs.1);
@@ -60,6 +67,7 @@ impl<T> BitOr<T> for BinaryMask<T>
     where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
     type Output = Self;
 
+    #[inline]
     fn bitor(self, rhs: T) -> Self::Output {
         let z1 = self.0 & !rhs;
         let z2 = self.1 | rhs;
@@ -69,6 +77,8 @@ impl<T> BitOr<T> for BinaryMask<T>
 
 impl<T> BitOrAssign for BinaryMask<T>
     where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
+
+    #[inline]
     fn bitor_assign(&mut self, rhs: Self) {
         *self = *self | rhs;
     }
@@ -77,6 +87,7 @@ impl<T> BitOrAssign for BinaryMask<T>
 impl<T: Shl<R>, R: Copy> Shl<R> for BinaryMask<T> {
     type Output = BinaryMask<T::Output>;
 
+    #[inline]
     fn shl(self, rhs: R) -> Self::Output {
         BinaryMask(
             self.0 << rhs,
@@ -86,6 +97,7 @@ impl<T: Shl<R>, R: Copy> Shl<R> for BinaryMask<T> {
 }
 
 impl<T: ShlAssign<R>, R: Copy> ShlAssign<R> for BinaryMask<T> {
+    #[inline]
     fn shl_assign(&mut self, rhs: R) {
         self.0 <<= rhs;
         self.1 <<= rhs;
@@ -95,6 +107,7 @@ impl<T: ShlAssign<R>, R: Copy> ShlAssign<R> for BinaryMask<T> {
 impl<T: Shr<R>, R: Copy> Shr<R> for BinaryMask<T> {
     type Output = BinaryMask<T::Output>;
 
+    #[inline]
     fn shr(self, rhs: R) -> Self::Output {
         BinaryMask(
             self.0 >> rhs,
@@ -104,6 +117,7 @@ impl<T: Shr<R>, R: Copy> Shr<R> for BinaryMask<T> {
 }
 
 impl<T: ShrAssign<R>, R: Copy> ShrAssign<R> for BinaryMask<T> {
+    #[inline]
     fn shr_assign(&mut self, rhs: R) {
         self.0 >>= rhs;
         self.1 >>= rhs;
@@ -113,6 +127,7 @@ impl<T: ShrAssign<R>, R: Copy> ShrAssign<R> for BinaryMask<T> {
 impl<T: BitXor> BitXor for BinaryMask<T> {
     type Output = BinaryMask<T::Output>;
 
+    #[inline]
     fn bitxor(self, rhs: Self) -> Self::Output {
         BinaryMask(
             self.0 ^ rhs.0,
@@ -122,6 +137,7 @@ impl<T: BitXor> BitXor for BinaryMask<T> {
 }
 
 impl<T: BitXorAssign> BitXorAssign for BinaryMask<T> {
+    #[inline]
     fn bitxor_assign(&mut self, rhs: Self) {
         self.0 ^= rhs.0;
         self.1 ^= rhs.1;
@@ -131,6 +147,7 @@ impl<T: BitXorAssign> BitXorAssign for BinaryMask<T> {
 impl<T: BitXor<Output=T>> BitXor<T> for BinaryMask<T> {
     type Output = Self;
 
+    #[inline]
     fn bitxor(self, rhs: T) -> Self::Output {
         BinaryMask(
             self.0 ^ rhs,
@@ -140,12 +157,14 @@ impl<T: BitXor<Output=T>> BitXor<T> for BinaryMask<T> {
 }
 
 impl<T: BitXorAssign> BitXorAssign<T> for BinaryMask<T> {
+    #[inline]
     fn bitxor_assign(&mut self, rhs: T) {
         self.0 ^= rhs;
     }
 }
 
 impl<T: Rotate> Rotate for BinaryMask<T> {
+    #[inline]
     fn rotate_right(self, rhs: u32) -> Self {
         BinaryMask(
             self.0.rotate_right(rhs),
@@ -155,6 +174,7 @@ impl<T: Rotate> Rotate for BinaryMask<T> {
 }
 
 impl<T: BitXor<Output=T> + Copy> State<T> {
+    #[inline]
     pub fn make_shares(self, masks: (T, T, T, T)) -> State<BinaryMask<T>> {
         State(
             BinaryMask::make_shares(self.0, masks.0),
@@ -166,6 +186,7 @@ impl<T: BitXor<Output=T> + Copy> State<T> {
 }
 
 impl<T: BitXor<Output=T> + Copy> State<BinaryMask<T>> {
+    #[inline]
     pub fn recover_shares(self) -> State<T> {
         State(
             self.0.recover_shares(),
@@ -177,6 +198,7 @@ impl<T: BitXor<Output=T> + Copy> State<BinaryMask<T>> {
 }
 
 impl<T: SwapBytes> SwapBytes for BinaryMask<T> {
+    #[inline]
     fn swap_bytes(self) -> Self {
         Self(
             self.0.swap_bytes(),
@@ -186,6 +208,7 @@ impl<T: SwapBytes> SwapBytes for BinaryMask<T> {
 }
 
 impl From<BinaryMask<u32>> for BinaryMask<u8> {
+    #[inline]
     fn from(x: BinaryMask<u32>) -> Self {
         BinaryMask(
             x.0 as u8,
@@ -195,6 +218,7 @@ impl From<BinaryMask<u32>> for BinaryMask<u8> {
 }
 
 impl From<BinaryMask<u8>> for BinaryMask<u32> {
+    #[inline]
     fn from(x: BinaryMask<u8>) -> Self {
         BinaryMask(
             x.0 as u32,
@@ -204,6 +228,7 @@ impl From<BinaryMask<u8>> for BinaryMask<u32> {
 }
 
 impl<T: Default> Default for BinaryMask<T> {
+    #[inline]
     fn default() -> Self {
         BinaryMask(
             Default::default(),
