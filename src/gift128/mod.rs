@@ -120,32 +120,32 @@ pub fn decrypt_masked(ciphertext: &[BinaryMask<u8>], key: &MaskedKey, plaintext:
 
 #[must_use]
 pub fn bitsliced_encrypt_block(plaintext: &Block, round_keys: &RoundKeys<u32>) -> Block {
-    let initial_state = bitsliced_pack(&plaintext);
-    let final_state = rounds(initial_state, &round_keys);
+    let initial_state = bitsliced_pack(plaintext);
+    let final_state = rounds(initial_state, round_keys);
     bitsliced_unpack(final_state)
 }
 
 #[must_use]
 pub fn bitsliced_decrypt_block(ciphertext: &Block, round_keys: &RoundKeys<u32>) -> Block {
-    let initial_state = bitsliced_pack(&ciphertext);
-    let final_state = inv_rounds(initial_state, &round_keys);
+    let initial_state = bitsliced_pack(ciphertext);
+    let final_state = inv_rounds(initial_state, round_keys);
     bitsliced_unpack(final_state)
 }
 
 #[must_use]
 pub fn bitsliced_masked_encrypt_block(plaintext: &Block, mask: (u32, u32, u32, u32), round_keys: &RoundKeys<BinaryMask<u32>>) -> Block {
-    let initial_state = bitsliced_pack(&plaintext);
+    let initial_state = bitsliced_pack(plaintext);
     let initial_masked_state = initial_state.make_shares(mask);
-    let final_masked_state = rounds(initial_masked_state, &round_keys);
+    let final_masked_state = rounds(initial_masked_state, round_keys);
     let final_state = final_masked_state.recover_shares();
     bitsliced_unpack(final_state)
 }
 
 #[must_use]
 pub fn bitsliced_masked_decrypt_block(ciphertext: &Block, mask: (u32, u32, u32, u32), round_keys: &RoundKeys<BinaryMask<u32>>) -> Block {
-    let initial_state = bitsliced_pack(&ciphertext);
+    let initial_state = bitsliced_pack(ciphertext);
     let initial_masked_state = initial_state.make_shares(mask);
-    let final_masked_state = inv_rounds(initial_masked_state, &round_keys);
+    let final_masked_state = inv_rounds(initial_masked_state, round_keys);
     let final_state = final_masked_state.recover_shares();
     bitsliced_unpack(final_state)
 }
@@ -286,8 +286,8 @@ mod tests {
         for case in &CASES {
             let masked_key = mask_key(&case.key, &key_masks);
             let round_keys = precompute_masked_round_keys(&masked_key);
-            let ciphertext = bitsliced_masked_encrypt_block(&case.plaintext, encrypt_masks.clone(), &round_keys);
-            let plaintext = bitsliced_masked_decrypt_block(&ciphertext, decrypt_masks.clone(), &round_keys);
+            let ciphertext = bitsliced_masked_encrypt_block(&case.plaintext, encrypt_masks, &round_keys);
+            let plaintext = bitsliced_masked_decrypt_block(&ciphertext, decrypt_masks, &round_keys);
 
             assert_eq!(case.plaintext, plaintext);
         }

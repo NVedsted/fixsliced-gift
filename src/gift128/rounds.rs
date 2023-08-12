@@ -135,9 +135,7 @@ pub(super) fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T],
     s1 ^= round_keys[8];
     s2 ^= round_keys[9];
     s0 ^= round_constants[4];
-    s0 ^= s3;
-    s3 ^= s0;
-    s0 ^= s3;
+    core::mem::swap(&mut s0, &mut s3);
 
     State(s0, s1, s2, s3)
 }
@@ -146,9 +144,7 @@ pub(super) fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T],
 #[must_use]
 fn inv_quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
-    s0 ^= s3;
-    s3 ^= s0;
-    s0 ^= s3;
+    core::mem::swap(&mut s0, &mut s3);
     s1 ^= round_keys[8];
     s2 ^= round_keys[9];
     s0 ^= round_constants[4];
