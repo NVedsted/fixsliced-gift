@@ -22,7 +22,7 @@ pub type Key = [u8; KEY_SIZE];
 pub type MaskedKey = [BinaryMask<u8>; KEY_SIZE];
 
 pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
-    if plaintext.len() % BLOCK_SIZE != 0 {
+    if !plaintext.len().is_multiple_of(BLOCK_SIZE) {
         panic!("plaintext size is not a multiple of 16");
     }
 
@@ -42,7 +42,7 @@ pub fn encrypt(plaintext: &[u8], key: &Key, ciphertext: &mut [u8]) {
 }
 
 pub fn decrypt(ciphertext: &[u8], key: &Key, plaintext: &mut [u8]) {
-    if ciphertext.len() % 16 != 0 {
+    if !ciphertext.len().is_multiple_of(16) {
         panic!("ciphertext size is not a multiple of 16");
     }
 
@@ -81,7 +81,7 @@ pub fn unmask_block(masked_block: &MaskedBlock) -> Block {
 }
 
 pub fn encrypt_masked(plaintext: &[BinaryMask<u8>], key: &MaskedKey, ciphertext: &mut [BinaryMask<u8>]) {
-    if plaintext.len() % BLOCK_SIZE != 0 {
+    if !plaintext.len().is_multiple_of(BLOCK_SIZE) {
         panic!("plaintext size is not a multiple of 16");
     }
 
@@ -100,7 +100,7 @@ pub fn encrypt_masked(plaintext: &[BinaryMask<u8>], key: &MaskedKey, ciphertext:
 }
 
 pub fn decrypt_masked(ciphertext: &[BinaryMask<u8>], key: &MaskedKey, plaintext: &mut [BinaryMask<u8>]) {
-    if ciphertext.len() % 16 != 0 {
+    if !ciphertext.len().is_multiple_of(16) {
         panic!("ciphertext size is not a multiple of 16");
     }
 
