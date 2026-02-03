@@ -1,9 +1,9 @@
 use core::ops::{BitAnd, BitOr, Shl, Shr};
 
-use crate::gift128::{Key, KEY_SIZE};
 use crate::gift128::masking::BinaryMask;
-use crate::gift128::traits::{Rotate, SwapBytes};
 use crate::gift128::rounds::ROUNDS;
+use crate::gift128::traits::{Rotate, SwapBytes};
+use crate::gift128::{Key, KEY_SIZE};
 use crate::swapmove::{swap_move_single, SwapMoveTraits};
 
 // TODO: use tuples
@@ -12,7 +12,13 @@ pub type RoundKeys<T> = [T; ROUNDS * 2];
 #[must_use]
 #[inline]
 fn key_update<T>(round_key: T) -> T
-    where T: Copy + Shr<usize, Output=T> + Shl<usize, Output=T> + BitAnd<u32, Output=T> + BitOr<Output=T> {
+where
+    T: Copy
+        + Shr<usize, Output = T>
+        + Shl<usize, Output = T>
+        + BitAnd<u32, Output = T>
+        + BitOr<Output = T>,
+{
     ((round_key >> 12) & 0x0000000f)
         | ((round_key & 0x00000fff) << 4)
         | ((round_key >> 2) & 0x3fff0000)
@@ -58,14 +64,22 @@ fn rearrange_round_key3<T: SwapMoveTraits>(mut round_key: T) -> T {
 #[must_use]
 #[inline]
 fn key_triple_update_0<T>(round_key: T) -> T
-    where T: Copy + BitAnd<u32, Output=T> + BitOr<Output=T> + Rotate {
+where
+    T: Copy + BitAnd<u32, Output = T> + BitOr<Output = T> + Rotate,
+{
     (round_key & 0x33333333).rotate_right(24) | (round_key & 0xcccccccc).rotate_right(16)
 }
 
 #[must_use]
 #[inline]
 fn key_double_update_1<T>(round_key: T) -> T
-    where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
+where
+    T: Copy
+        + Shr<usize, Output = T>
+        + BitAnd<u32, Output = T>
+        + Shl<usize, Output = T>
+        + BitOr<Output = T>,
+{
     ((round_key >> 4) & 0x0f000f00)
         | ((round_key & 0x0f000f00) << 4)
         | ((round_key >> 6) & 0x00030003)
@@ -75,7 +89,13 @@ fn key_double_update_1<T>(round_key: T) -> T
 #[must_use]
 #[inline]
 fn key_triple_update_1<T>(round_key: T) -> T
-    where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
+where
+    T: Copy
+        + Shr<usize, Output = T>
+        + BitAnd<u32, Output = T>
+        + Shl<usize, Output = T>
+        + BitOr<Output = T>,
+{
     ((round_key >> 6) & 0x03000300)
         | ((round_key & 0x3f003f00) << 2)
         | ((round_key >> 5) & 0x00070007)
@@ -85,21 +105,31 @@ fn key_triple_update_1<T>(round_key: T) -> T
 #[must_use]
 #[inline]
 fn key_double_update_2<T>(round_key: T) -> T
-    where T: Copy + BitAnd<u32, Output=T> + BitOr<Output=T> + Rotate {
+where
+    T: Copy + BitAnd<u32, Output = T> + BitOr<Output = T> + Rotate,
+{
     (round_key & 0xaaaaaaaa).rotate_right(24) | (round_key & 0x55555555).rotate_right(16)
 }
 
 #[must_use]
 #[inline]
 fn key_triple_update_2<T>(round_key: T) -> T
-    where T: Copy + BitAnd<u32, Output=T> + BitOr<Output=T> + Rotate {
+where
+    T: Copy + BitAnd<u32, Output = T> + BitOr<Output = T> + Rotate,
+{
     (round_key & 0x55555555).rotate_right(24) | (round_key & 0xaaaaaaaa).rotate_right(20)
 }
 
 #[must_use]
 #[inline]
 fn key_double_update_3<T>(round_key: T) -> T
-    where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
+where
+    T: Copy
+        + Shr<usize, Output = T>
+        + BitAnd<u32, Output = T>
+        + Shl<usize, Output = T>
+        + BitOr<Output = T>,
+{
     ((round_key >> 2) & 0x03030303)
         | ((round_key & 0x03030303) << 2)
         | ((round_key >> 1) & 0x70707070)
@@ -109,7 +139,13 @@ fn key_double_update_3<T>(round_key: T) -> T
 #[must_use]
 #[inline]
 fn key_triple_update_3<T>(round_key: T) -> T
-    where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
+where
+    T: Copy
+        + Shr<usize, Output = T>
+        + BitAnd<u32, Output = T>
+        + Shl<usize, Output = T>
+        + BitOr<Output = T>,
+{
     ((round_key >> 18) & 0x00003030)
         | ((round_key & 0x01010101) << 3)
         | ((round_key >> 14) & 0x0000c0c0)
@@ -121,7 +157,13 @@ fn key_triple_update_3<T>(round_key: T) -> T
 #[must_use]
 #[inline]
 fn key_double_update_4<T>(round_key: T) -> T
-    where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
+where
+    T: Copy
+        + Shr<usize, Output = T>
+        + BitAnd<u32, Output = T>
+        + Shl<usize, Output = T>
+        + BitOr<Output = T>,
+{
     ((round_key >> 4) & 0x0fff0000)
         | ((round_key & 0x000f0000) << 12)
         | ((round_key >> 8) & 0x000000ff)
@@ -131,7 +173,13 @@ fn key_double_update_4<T>(round_key: T) -> T
 #[must_use]
 #[inline]
 fn key_triple_update_4<T>(round_key: T) -> T
-    where T: Copy + Shr<usize, Output=T> + BitAnd<u32, Output=T> + Shl<usize, Output=T> + BitOr<Output=T> {
+where
+    T: Copy
+        + Shr<usize, Output = T>
+        + BitAnd<u32, Output = T>
+        + Shl<usize, Output = T>
+        + BitOr<Output = T>,
+{
     ((round_key >> 6) & 0x03ff0000)
         | ((round_key & 0x003f0000) << 10)
         | ((round_key >> 4) & 0x00000fff)
@@ -139,7 +187,9 @@ fn key_triple_update_4<T>(round_key: T) -> T
 }
 
 fn fill_round_keys<T>(round_keys: &mut [T; ROUNDS * 2])
-    where T: SwapMoveTraits + BitOr<Output=T> + Rotate {
+where
+    T: SwapMoveTraits + BitOr<Output = T> + Rotate,
+{
     for i in (0..16).step_by(2) {
         round_keys[i + 4] = round_keys[i + 1];
         round_keys[i + 5] = key_update(round_keys[i]);
@@ -196,24 +246,30 @@ pub fn mask_key(key: &[u8; KEY_SIZE], masks: &[u8; KEY_SIZE]) -> [BinaryMask<u8>
 }
 
 #[must_use]
-pub fn precompute_masked_round_keys(key: &[BinaryMask<u8>; KEY_SIZE]) -> RoundKeys<BinaryMask<u32>> {
+pub fn precompute_masked_round_keys(
+    key: &[BinaryMask<u8>; KEY_SIZE],
+) -> RoundKeys<BinaryMask<u32>> {
     let mut round_keys = [BinaryMask::make_shares(0, 0); ROUNDS * 2];
     round_keys[0] = BinaryMask(
         u32::from_le_bytes([key[12].0, key[13].0, key[14].0, key[15].0]),
         u32::from_le_bytes([key[12].1, key[13].1, key[14].1, key[15].1]),
-    ).swap_bytes();
+    )
+    .swap_bytes();
     round_keys[1] = BinaryMask(
         u32::from_le_bytes([key[4].0, key[5].0, key[6].0, key[7].0]),
         u32::from_le_bytes([key[4].1, key[5].1, key[6].1, key[7].1]),
-    ).swap_bytes();
+    )
+    .swap_bytes();
     round_keys[2] = BinaryMask(
         u32::from_le_bytes([key[8].0, key[9].0, key[10].0, key[11].0]),
         u32::from_le_bytes([key[8].1, key[9].1, key[10].1, key[11].1]),
-    ).swap_bytes();
+    )
+    .swap_bytes();
     round_keys[3] = BinaryMask(
         u32::from_le_bytes([key[0].0, key[1].0, key[2].0, key[3].0]),
         u32::from_le_bytes([key[0].1, key[1].1, key[2].1, key[3].1]),
-    ).swap_bytes();
+    )
+    .swap_bytes();
 
     fill_round_keys(&mut round_keys);
 
@@ -222,16 +278,18 @@ pub fn precompute_masked_round_keys(key: &[BinaryMask<u8>; KEY_SIZE]) -> RoundKe
 
 #[cfg(test)]
 mod tests {
-    use crate::gift128::key_schedule::{mask_key, precompute_masked_round_keys, precompute_round_keys};
+    use crate::gift128::key_schedule::{
+        mask_key, precompute_masked_round_keys, precompute_round_keys,
+    };
     use crate::gift128::KEY_SIZE;
 
     const KEY: [u8; KEY_SIZE] = [
-        0xd0, 0xf5, 0xc5, 0x9a, 0x77, 0x00, 0xd3, 0xe7,
-        0x99, 0x02, 0x8f, 0xa9, 0xf9, 0x0a, 0xd8, 0x37u8,
+        0xd0, 0xf5, 0xc5, 0x9a, 0x77, 0x00, 0xd3, 0xe7, 0x99, 0x02, 0x8f, 0xa9, 0xf9, 0x0a, 0xd8,
+        0x37u8,
     ];
     const KEY_MASKS: [u8; KEY_SIZE] = [
-        0x1d, 0x54, 0xf0, 0x8e, 0x55, 0x0a, 0xaf, 0x8c,
-        0xb3, 0xd2, 0x7d, 0x46, 0x4a, 0xaf, 0xa1, 0xb4u8,
+        0x1d, 0x54, 0xf0, 0x8e, 0x55, 0x0a, 0xaf, 0x8c, 0xb3, 0xd2, 0x7d, 0x46, 0x4a, 0xaf, 0xa1,
+        0xb4u8,
     ];
 
     #[test]

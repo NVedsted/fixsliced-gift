@@ -1,9 +1,22 @@
 use core::ops::{BitAnd, BitXor, Shl, Shr};
 
-pub trait SwapMoveTraits: Shr<usize, Output=Self> + BitXor<Output=Self> + BitAnd<u32, Output=Self> + Copy + Shl<usize, Output=Self> {}
+pub trait SwapMoveTraits:
+    Shr<usize, Output = Self>
+    + BitXor<Output = Self>
+    + BitAnd<u32, Output = Self>
+    + Copy
+    + Shl<usize, Output = Self>
+{
+}
 
-impl<T> SwapMoveTraits for T
-    where T: Shr<usize, Output=T> + BitXor<Output=T> + BitAnd<u32, Output=T> + Copy + Shl<usize, Output=T> {}
+impl<T> SwapMoveTraits for T where
+    T: Shr<usize, Output = T>
+        + BitXor<Output = T>
+        + BitAnd<u32, Output = T>
+        + Copy
+        + Shl<usize, Output = T>
+{
+}
 
 #[must_use]
 #[inline]

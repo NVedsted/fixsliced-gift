@@ -1,4 +1,7 @@
-use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr, ShrAssign};
+use core::ops::{
+    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl, ShlAssign, Shr,
+    ShrAssign,
+};
 
 use crate::gift128::traits::{Rotate, SwapBytes};
 use crate::gift128::State;
@@ -6,7 +9,7 @@ use crate::gift128::State;
 #[derive(Copy, Clone, Debug)]
 pub struct BinaryMask<T>(pub T, pub T);
 
-impl<T: BitXor<Output=T> + Copy> BinaryMask<T> {
+impl<T: BitXor<Output = T> + Copy> BinaryMask<T> {
     #[inline]
     pub fn make_shares(v: T, m: T) -> Self {
         BinaryMask(v ^ m, m)
@@ -19,7 +22,9 @@ impl<T: BitXor<Output=T> + Copy> BinaryMask<T> {
 }
 
 impl<T> BitAnd for BinaryMask<T>
-    where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
+where
+    T: BitAnd<Output = T> + Not<Output = T> + BitOr<Output = T> + BitXor<Output = T> + Copy,
+{
     type Output = Self;
 
     #[inline]
@@ -31,7 +36,9 @@ impl<T> BitAnd for BinaryMask<T>
 }
 
 impl<T> BitAnd<T> for BinaryMask<T>
-    where T: BitAnd<Output=T> + Not<Output=T> + Copy {
+where
+    T: BitAnd<Output = T> + Not<Output = T> + Copy,
+{
     type Output = Self;
 
     #[inline]
@@ -43,8 +50,9 @@ impl<T> BitAnd<T> for BinaryMask<T>
 }
 
 impl<T> BitAndAssign for BinaryMask<T>
-    where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
-
+where
+    T: BitAnd<Output = T> + Not<Output = T> + BitOr<Output = T> + BitXor<Output = T> + Copy,
+{
     #[inline]
     fn bitand_assign(&mut self, rhs: Self) {
         *self = *self & rhs;
@@ -52,7 +60,9 @@ impl<T> BitAndAssign for BinaryMask<T>
 }
 
 impl<T> BitOr for BinaryMask<T>
-    where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
+where
+    T: BitAnd<Output = T> + Not<Output = T> + BitOr<Output = T> + BitXor<Output = T> + Copy,
+{
     type Output = Self;
 
     #[inline]
@@ -64,7 +74,9 @@ impl<T> BitOr for BinaryMask<T>
 }
 
 impl<T> BitOr<T> for BinaryMask<T>
-    where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
+where
+    T: BitAnd<Output = T> + Not<Output = T> + BitOr<Output = T> + BitXor<Output = T> + Copy,
+{
     type Output = Self;
 
     #[inline]
@@ -76,8 +88,9 @@ impl<T> BitOr<T> for BinaryMask<T>
 }
 
 impl<T> BitOrAssign for BinaryMask<T>
-    where T: BitAnd<Output=T> + Not<Output=T> + BitOr<Output=T> + BitXor<Output=T> + Copy {
-
+where
+    T: BitAnd<Output = T> + Not<Output = T> + BitOr<Output = T> + BitXor<Output = T> + Copy,
+{
     #[inline]
     fn bitor_assign(&mut self, rhs: Self) {
         *self = *self | rhs;
@@ -89,10 +102,7 @@ impl<T: Shl<R>, R: Copy> Shl<R> for BinaryMask<T> {
 
     #[inline]
     fn shl(self, rhs: R) -> Self::Output {
-        BinaryMask(
-            self.0 << rhs,
-            self.1 << rhs,
-        )
+        BinaryMask(self.0 << rhs, self.1 << rhs)
     }
 }
 
@@ -109,10 +119,7 @@ impl<T: Shr<R>, R: Copy> Shr<R> for BinaryMask<T> {
 
     #[inline]
     fn shr(self, rhs: R) -> Self::Output {
-        BinaryMask(
-            self.0 >> rhs,
-            self.1 >> rhs,
-        )
+        BinaryMask(self.0 >> rhs, self.1 >> rhs)
     }
 }
 
@@ -129,10 +136,7 @@ impl<T: BitXor> BitXor for BinaryMask<T> {
 
     #[inline]
     fn bitxor(self, rhs: Self) -> Self::Output {
-        BinaryMask(
-            self.0 ^ rhs.0,
-            self.1 ^ rhs.1,
-        )
+        BinaryMask(self.0 ^ rhs.0, self.1 ^ rhs.1)
     }
 }
 
@@ -144,15 +148,12 @@ impl<T: BitXorAssign> BitXorAssign for BinaryMask<T> {
     }
 }
 
-impl<T: BitXor<Output=T>> BitXor<T> for BinaryMask<T> {
+impl<T: BitXor<Output = T>> BitXor<T> for BinaryMask<T> {
     type Output = Self;
 
     #[inline]
     fn bitxor(self, rhs: T) -> Self::Output {
-        BinaryMask(
-            self.0 ^ rhs,
-            self.1,
-        )
+        BinaryMask(self.0 ^ rhs, self.1)
     }
 }
 
@@ -166,14 +167,11 @@ impl<T: BitXorAssign> BitXorAssign<T> for BinaryMask<T> {
 impl<T: Rotate> Rotate for BinaryMask<T> {
     #[inline]
     fn rotate_right(self, rhs: u32) -> Self {
-        BinaryMask(
-            self.0.rotate_right(rhs),
-            self.1.rotate_right(rhs),
-        )
+        BinaryMask(self.0.rotate_right(rhs), self.1.rotate_right(rhs))
     }
 }
 
-impl<T: BitXor<Output=T> + Copy> State<T> {
+impl<T: BitXor<Output = T> + Copy> State<T> {
     #[inline]
     pub fn make_shares(self, masks: (T, T, T, T)) -> State<BinaryMask<T>> {
         State(
@@ -185,7 +183,7 @@ impl<T: BitXor<Output=T> + Copy> State<T> {
     }
 }
 
-impl<T: BitXor<Output=T> + Copy> State<BinaryMask<T>> {
+impl<T: BitXor<Output = T> + Copy> State<BinaryMask<T>> {
     #[inline]
     pub fn recover_shares(self) -> State<T> {
         State(
@@ -200,48 +198,36 @@ impl<T: BitXor<Output=T> + Copy> State<BinaryMask<T>> {
 impl<T: SwapBytes> SwapBytes for BinaryMask<T> {
     #[inline]
     fn swap_bytes(self) -> Self {
-        Self(
-            self.0.swap_bytes(),
-            self.1.swap_bytes(),
-        )
+        Self(self.0.swap_bytes(), self.1.swap_bytes())
     }
 }
 
 impl From<BinaryMask<u32>> for BinaryMask<u8> {
     #[inline]
     fn from(x: BinaryMask<u32>) -> Self {
-        BinaryMask(
-            x.0 as u8,
-            x.1 as u8,
-        )
+        BinaryMask(x.0 as u8, x.1 as u8)
     }
 }
 
 impl From<BinaryMask<u8>> for BinaryMask<u32> {
     #[inline]
     fn from(x: BinaryMask<u8>) -> Self {
-        BinaryMask(
-            x.0 as u32,
-            x.1 as u32,
-        )
+        BinaryMask(x.0 as u32, x.1 as u32)
     }
 }
 
 impl<T: Default> Default for BinaryMask<T> {
     #[inline]
     fn default() -> Self {
-        BinaryMask(
-            Default::default(),
-            Default::default(),
-        )
+        BinaryMask(Default::default(), Default::default())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::gift128::masking::BinaryMask;
-    use crate::gift128::traits::{Rotate, SwapBytes};
     use crate::gift128::rounds::StateOperations;
+    use crate::gift128::traits::{Rotate, SwapBytes};
 
     #[test]
     fn test_and() {
@@ -384,14 +370,41 @@ mod tests {
         let mask = 0xB751F5EFu32;
         let masked_value = BinaryMask::make_shares(value, mask);
 
-        assert_eq!(masked_value.byte_ror_2().recover_shares(), value.byte_ror_2());
-        assert_eq!(masked_value.byte_ror_4().recover_shares(), value.byte_ror_4());
-        assert_eq!(masked_value.byte_ror_6().recover_shares(), value.byte_ror_6());
-        assert_eq!(masked_value.half_ror_4().recover_shares(), value.half_ror_4());
-        assert_eq!(masked_value.half_ror_8().recover_shares(), value.half_ror_8());
-        assert_eq!(masked_value.half_ror_12().recover_shares(), value.half_ror_12());
-        assert_eq!(masked_value.nibble_ror_1().recover_shares(), value.nibble_ror_1());
-        assert_eq!(masked_value.nibble_ror_2().recover_shares(), value.nibble_ror_2());
-        assert_eq!(masked_value.nibble_ror_3().recover_shares(), value.nibble_ror_3());
+        assert_eq!(
+            masked_value.byte_ror_2().recover_shares(),
+            value.byte_ror_2()
+        );
+        assert_eq!(
+            masked_value.byte_ror_4().recover_shares(),
+            value.byte_ror_4()
+        );
+        assert_eq!(
+            masked_value.byte_ror_6().recover_shares(),
+            value.byte_ror_6()
+        );
+        assert_eq!(
+            masked_value.half_ror_4().recover_shares(),
+            value.half_ror_4()
+        );
+        assert_eq!(
+            masked_value.half_ror_8().recover_shares(),
+            value.half_ror_8()
+        );
+        assert_eq!(
+            masked_value.half_ror_12().recover_shares(),
+            value.half_ror_12()
+        );
+        assert_eq!(
+            masked_value.nibble_ror_1().recover_shares(),
+            value.nibble_ror_1()
+        );
+        assert_eq!(
+            masked_value.nibble_ror_2().recover_shares(),
+            value.nibble_ror_2()
+        );
+        assert_eq!(
+            masked_value.nibble_ror_3().recover_shares(),
+            value.nibble_ror_3()
+        );
     }
 }

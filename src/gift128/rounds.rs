@@ -1,24 +1,19 @@
 use core::ops::{BitAnd, BitOr, BitXorAssign, Shl, Shr};
 
 use crate::gift128::key_schedule::RoundKeys;
-use crate::gift128::traits::Rotate;
 use crate::gift128::sbox::{inv_sbox, sbox, SboxTraits};
+use crate::gift128::traits::Rotate;
 use crate::gift128::State;
 use crate::swap_move_single;
 use crate::swapmove::SwapMoveTraits;
 
 pub const ROUNDS: usize = 40;
 const ROUND_CONSTANTS: [u32; ROUNDS] = [
-    0x10000008, 0x80018000, 0x54000002, 0x01010181,
-    0x8000001f, 0x10888880, 0x6001e000, 0x51500002,
-    0x03030180, 0x8000002f, 0x10088880, 0x60016000,
-    0x41500002, 0x03030080, 0x80000027, 0x10008880,
-    0x4001e000, 0x11500002, 0x03020180, 0x8000002b,
-    0x10080880, 0x60014000, 0x01400002, 0x02020080,
-    0x80000021, 0x10000080, 0x0001c000, 0x51000002,
-    0x03010180, 0x8000002e, 0x10088800, 0x60012000,
-    0x40500002, 0x01030080, 0x80000006, 0x10008808,
-    0xc001a000, 0x14500002, 0x01020181, 0x8000001a
+    0x10000008, 0x80018000, 0x54000002, 0x01010181, 0x8000001f, 0x10888880, 0x6001e000, 0x51500002,
+    0x03030180, 0x8000002f, 0x10088880, 0x60016000, 0x41500002, 0x03030080, 0x80000027, 0x10008880,
+    0x4001e000, 0x11500002, 0x03020180, 0x8000002b, 0x10080880, 0x60014000, 0x01400002, 0x02020080,
+    0x80000021, 0x10000080, 0x0001c000, 0x51000002, 0x03010180, 0x8000002e, 0x10088800, 0x60012000,
+    0x40500002, 0x01030080, 0x80000006, 0x10008808, 0xc001a000, 0x14500002, 0x01020181, 0x8000001a,
 ];
 
 pub trait StateOperations {
@@ -51,7 +46,13 @@ pub trait StateOperations {
 }
 
 impl<T> StateOperations for T
-    where T: Copy + Shr<u32, Output=Self> + BitAnd<u32, Output=Self> + Shl<u32, Output=Self> + BitOr<Output=Self> {
+where
+    T: Copy
+        + Shr<u32, Output = Self>
+        + BitAnd<u32, Output = Self>
+        + Shl<u32, Output = Self>
+        + BitOr<Output = Self>,
+{
     #[inline]
     fn byte_ror_2(self) -> Self {
         ((self >> 2) & 0x3f3f3f3f) | ((self & 0x03030303) << 6)
@@ -98,15 +99,24 @@ impl<T> StateOperations for T
     }
 }
 
-pub trait RoundTraits: SboxTraits + StateOperations + SwapMoveTraits + BitXorAssign<u32> + Rotate {}
+pub trait RoundTraits:
+    SboxTraits + StateOperations + SwapMoveTraits + BitXorAssign<u32> + Rotate
+{
+}
 
-impl<T> RoundTraits for T
-    where T: SboxTraits + StateOperations + SwapMoveTraits + BitXorAssign<u32> + Rotate {}
+impl<T> RoundTraits for T where
+    T: SboxTraits + StateOperations + SwapMoveTraits + BitXorAssign<u32> + Rotate
+{
+}
 
 // TODO: possible to fix size on slices?
 #[must_use]
 #[inline(always)]
-fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
+fn quintuple_round<T: RoundTraits>(
+    state: State<T>,
+    round_keys: &[T],
+    round_constants: &[u32],
+) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     State(s0, s1, s2, s3) = sbox(State(s0, s1, s2, s3));
     s3 = s3.nibble_ror_1();
@@ -153,7 +163,11 @@ fn quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_cons
 // TODO: possible to fix size on slices?
 #[must_use]
 #[inline(always)]
-fn inv_quintuple_round<T: RoundTraits>(state: State<T>, round_keys: &[T], round_constants: &[u32]) -> State<T> {
+fn inv_quintuple_round<T: RoundTraits>(
+    state: State<T>,
+    round_keys: &[T],
+    round_constants: &[u32],
+) -> State<T> {
     let State(mut s0, mut s1, mut s2, mut s3) = state;
     core::mem::swap(&mut s0, &mut s3);
     s1 ^= round_keys[8];
@@ -209,7 +223,10 @@ pub(super) fn rounds<T: RoundTraits>(mut state: State<T>, round_keys: &RoundKeys
     state
 }
 
-pub(super) fn inv_rounds<T: RoundTraits>(mut state: State<T>, round_keys: &RoundKeys<T>) -> State<T> {
+pub(super) fn inv_rounds<T: RoundTraits>(
+    mut state: State<T>,
+    round_keys: &RoundKeys<T>,
+) -> State<T> {
     for i in (0..ROUNDS).step_by(5).rev() {
         state = inv_quintuple_round(
             state,

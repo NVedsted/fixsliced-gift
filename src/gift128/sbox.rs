@@ -2,10 +2,15 @@ use core::ops::{BitAnd, BitOr, BitXorAssign};
 
 use crate::gift128::State;
 
-pub trait SboxTraits: BitXorAssign + Copy + BitAnd<Output=Self> + BitXorAssign<u32> + BitOr<Output=Self> {}
+pub trait SboxTraits:
+    BitXorAssign + Copy + BitAnd<Output = Self> + BitXorAssign<u32> + BitOr<Output = Self>
+{
+}
 
-impl<T> SboxTraits for T
-    where T: BitXorAssign + Copy + BitAnd<Output=T> + BitXorAssign<u32> + BitOr<Output=T> {}
+impl<T> SboxTraits for T where
+    T: BitXorAssign + Copy + BitAnd<Output = T> + BitXorAssign<u32> + BitOr<Output = T>
+{
+}
 
 #[must_use]
 #[inline]
